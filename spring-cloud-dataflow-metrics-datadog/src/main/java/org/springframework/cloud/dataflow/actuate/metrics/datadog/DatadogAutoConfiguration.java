@@ -15,20 +15,20 @@
  */
 package org.springframework.cloud.dataflow.actuate.metrics.datadog;
 
+import org.coursera.metrics.datadog.transport.HttpTransport;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.dataflow.metrics.MetricsPrefixResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
-import org.coursera.metrics.datadog.transport.HttpTransport;
-
 @Configuration
 @ConditionalOnClass(HttpTransport.class)
-@Conditional(DatadogAutoConfiguration.DatadogPropertyCondition.class)
+@ConditionalOnProperty("spring.cloud.dataflow.datadog.api-key")
 @EnableConfigurationProperties(DatadogProperties.class)
 public class DatadogAutoConfiguration {
 
@@ -45,20 +45,9 @@ public class DatadogAutoConfiguration {
     }
 
     @Bean
-    public DatadogMetricWriter datadogMetricWriter(HttpTransport httpTransport) {
-        return new DatadogMetricWriter(httpTransport);
+    public DatadogMetricWriter datadogMetricWriter(HttpTransport httpTransport,
+                                                   MetricsPrefixResolver metricsPrefixResolver) {
+        return new DatadogMetricWriter(httpTransport, metricsPrefixResolver);
     }
 
-
-    static class DatadogPropertyCondition extends AnyNestedCondition {
-
-        DatadogPropertyCondition() {
-            super(ConfigurationPhase.PARSE_CONFIGURATION);
-        }
-
-        @ConditionalOnProperty(prefix = "spring.cloud.dataflow.datadog", value = "api-key")
-        static class DatadogApiKeyProperty {
-        }
-
-    }
 }

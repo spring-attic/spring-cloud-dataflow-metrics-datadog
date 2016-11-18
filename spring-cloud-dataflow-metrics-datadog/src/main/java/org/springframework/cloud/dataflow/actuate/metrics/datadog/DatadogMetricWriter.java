@@ -15,6 +15,8 @@
  */
 package org.springframework.cloud.dataflow.actuate.metrics.datadog;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,9 +44,13 @@ public class DatadogMetricWriter implements MetricWriter {
 
     private String prefix;
 
-    public DatadogMetricWriter(HttpTransport transport, MetricsPrefixResolver metricsPrefixResolver) {
+    private String hostname;
+
+    public DatadogMetricWriter(HttpTransport transport,
+                               MetricsPrefixResolver metricsPrefixResolver) {
         this.transport = transport;
         this.prefix = metricsPrefixResolver.getResolvedPrefix();
+        this.hostname = getLocalHost().getCanonicalHostName();
     }
 
     @Override
@@ -62,13 +68,25 @@ public class DatadogMetricWriter implements MetricWriter {
         try {
             final Number value = metric.getValue();
             Transport.Request request = transport.prepare();
-            log.debug("Sending to DataDog " + metric);
-            request.addGauge(new DatadogGauge(metricNameFormatter.format(prefix + "." + metric.getName()), value,
-                    metric.getTimestamp().getTime() / 1000, "feynman", tags));  //TODO hostname
+            log.info("Sending to DataDog " + prefix + ":" + metric);
+            request.addGauge(new DatadogGauge(metricNameFormatter.format(prefix + "." + metric.getName()),
+                    metric.getValue(), metric.getTimestamp().getTime() / 1000, hostname, tags));
             request.send();
 
         } catch (Throwable e) {
             log.error("Error reporting metrics to Datadog", e);
+        }
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    protected InetAddress getLocalHost() {
+        try {
+            return InetAddress.getLocalHost();
+        } catch (UnknownHostException ex) {
+            throw new IllegalArgumentException(ex.getMessage(), ex);
         }
     }
 }
