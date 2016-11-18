@@ -78,7 +78,7 @@ public class DatadogMetricWriter implements MetricWriter {
         try {
             Transport.Request request = transport.prepare();
             if (log.isDebugEnabled()) {
-                log.info("Sending to Datadog " + "Metric [name=" + prefix + "." + metric.getName() + ", value=" +
+                log.debug("Sending to Datadog " + "Metric [name=" + prefix + "." + metric.getName() + ", value=" +
                         metric.getValue() + ", timestamp=" + metric.getTimestamp() + "]");
             }
             request.addGauge(new DatadogGauge(getDatadogPrefix(metric),
