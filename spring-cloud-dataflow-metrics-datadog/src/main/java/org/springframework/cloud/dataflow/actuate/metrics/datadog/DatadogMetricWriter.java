@@ -15,13 +15,12 @@
  */
 package org.springframework.cloud.dataflow.actuate.metrics.datadog;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.coursera.metrics.datadog.DefaultMetricNameFormatter;
 import org.coursera.metrics.datadog.MetricNameFormatter;
+import org.coursera.metrics.datadog.model.DatadogCounter;
 import org.coursera.metrics.datadog.model.DatadogGauge;
 import org.coursera.metrics.datadog.transport.HttpTransport;
 import org.coursera.metrics.datadog.transport.Transport;
@@ -60,7 +59,13 @@ public class DatadogMetricWriter implements MetricWriter {
 
     @Override
     public void increment(Delta<?> delta) {
-        // Not implemented
+        try {
+            Transport.Request request = transport.prepare();
+            request.addCounter(new DatadogCounter(getDatadogPrefix(delta), delta.getValue().longValue(),
+                    getDatadogTimestamp(delta), hostname, tags));
+        } catch (Throwable e) {
+            log.error("Error reporting metrics to Datadog", e);
+        }
     }
 
     @Override
@@ -71,14 +76,13 @@ public class DatadogMetricWriter implements MetricWriter {
     @Override
     public void set(Metric<?> metric) {
         try {
-            final Number value = metric.getValue();
             Transport.Request request = transport.prepare();
             if (log.isDebugEnabled()) {
                 log.info("Sending to Datadog " + "Metric [name=" + prefix + "." + metric.getName() + ", value=" +
                         metric.getValue() + ", timestamp=" + metric.getTimestamp() + "]");
             }
-            request.addGauge(new DatadogGauge(metricNameFormatter.format(prefix + "." + metric.getName()),
-                    metric.getValue(), metric.getTimestamp().getTime() / 1000, hostname, tags));
+            request.addGauge(new DatadogGauge(getDatadogPrefix(metric),
+                    metric.getValue(), getDatadogTimestamp(metric), hostname, tags));
             request.send();
 
         } catch (Throwable e) {
@@ -86,8 +90,18 @@ public class DatadogMetricWriter implements MetricWriter {
         }
     }
 
+    private long getDatadogTimestamp(Metric<?> metric) {
+        return metric.getTimestamp().getTime() / 1000;
+    }
+
+    private String getDatadogPrefix(Metric<?> metric) {
+        return metricNameFormatter.format(prefix + "." + metric.getName());
+    }
+
     public String getPrefix() {
         return prefix;
     }
+
+
 
 }
