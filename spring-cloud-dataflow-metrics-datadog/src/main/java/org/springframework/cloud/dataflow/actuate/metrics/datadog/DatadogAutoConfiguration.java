@@ -16,6 +16,7 @@
 package org.springframework.cloud.dataflow.actuate.metrics.datadog;
 
 import org.coursera.metrics.datadog.transport.HttpTransport;
+import org.springframework.boot.actuate.autoconfigure.ExportMetricWriter;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,6 +46,7 @@ public class DatadogAutoConfiguration {
     }
 
     @Bean
+    @ExportMetricWriter
     public DatadogMetricWriter datadogMetricWriter(HttpTransport httpTransport,
                                                    MetricsPrefixResolver metricsPrefixResolver) {
         return new DatadogMetricWriter(httpTransport, metricsPrefixResolver);
