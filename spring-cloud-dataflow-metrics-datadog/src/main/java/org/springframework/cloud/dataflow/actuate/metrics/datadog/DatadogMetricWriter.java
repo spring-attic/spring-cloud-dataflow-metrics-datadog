@@ -27,6 +27,7 @@ import org.coursera.metrics.datadog.transport.HttpTransport;
 import org.coursera.metrics.datadog.transport.Transport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.actuate.metrics.writer.Delta;
 import org.springframework.boot.actuate.metrics.writer.MetricWriter;
@@ -44,13 +45,17 @@ public class DatadogMetricWriter implements MetricWriter {
 
     private String prefix;
 
+    @Value("${spring.cloud.client.hostname:hostname}")
     private String hostname;
 
     public DatadogMetricWriter(HttpTransport transport,
                                MetricsPrefixResolver metricsPrefixResolver) {
         this.transport = transport;
         this.prefix = metricsPrefixResolver.getResolvedPrefix();
-        this.hostname = getLocalHost().getCanonicalHostName();
+    }
+
+    public String getHostname() {
+        return hostname;
     }
 
     @Override
@@ -68,7 +73,10 @@ public class DatadogMetricWriter implements MetricWriter {
         try {
             final Number value = metric.getValue();
             Transport.Request request = transport.prepare();
-            log.info("Sending to DataDog " + prefix + ":" + metric);
+            if (log.isDebugEnabled()) {
+                log.info("Sending to Datadog " + "Metric [name=" + prefix + "." + metric.getName() + ", value=" +
+                        metric.getValue() + ", timestamp=" + metric.getTimestamp() + "]");
+            }
             request.addGauge(new DatadogGauge(metricNameFormatter.format(prefix + "." + metric.getName()),
                     metric.getValue(), metric.getTimestamp().getTime() / 1000, hostname, tags));
             request.send();
@@ -82,11 +90,4 @@ public class DatadogMetricWriter implements MetricWriter {
         return prefix;
     }
 
-    protected InetAddress getLocalHost() {
-        try {
-            return InetAddress.getLocalHost();
-        } catch (UnknownHostException ex) {
-            throw new IllegalArgumentException(ex.getMessage(), ex);
-        }
-    }
 }

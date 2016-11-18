@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationPid;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -33,10 +34,16 @@ public class DatadogApplicationTests {
     @Autowired
     private DatadogMetricWriter datadogMetricWriter;
 
+    @Value("${spring.cloud.client.hostname:hostname}")
+    private String hostname;
+
 
     @Test
     public void defaultValues() {
         assertThat(datadogMetricWriter).isNotNull();
         assertThat(datadogMetricWriter.getPrefix()).isEqualTo("group.application." + pid);
+        assertThat(datadogMetricWriter.getHostname()).isEqualTo(hostname);
     }
+
+
 }
